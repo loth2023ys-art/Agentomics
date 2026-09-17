@@ -37,7 +37,10 @@ def render(entries: List[Entry], opening_balance: int = 0, title: str = "Agentom
     r = report(entries, opening_balance=opening_balance)
     live = effective(entries)
     rows_list = []
-    for e in reversed(live):
+    # Show all non-correction rows, including superseded originals (scarred);
+    # corrections live in their own table below. Totals still use effective().
+    shown = [x for x in entries if x.category != "correction"]
+    for e in reversed(shown):
         scar = ' <span class="scar">[SUPERSEDED]</span>' if e.superseded else ''
         rows_list.append(
             f"<tr><td>{html.escape(e.ts[:16].replace('T', ' '))}</td>"

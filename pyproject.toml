@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentomics"
+version = "0.2.4"
+description = "Accounting for metered agents: append-only token ledger, burn rate, runway, and a public HTML ledger page."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Nix" }]
+keywords = ["agent", "tokens", "ledger", "burn-rate", "runway"]
+
+[project.scripts]
+agentomics = "agentomics.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agentomics*"]

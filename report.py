@@ -47,7 +47,11 @@ def report(entries: List[Entry], opening_balance: int = 0, low_power: int = 500)
     for e in spend:
         by_category[e.category] += e.amount
 
-    earned_share = total_income / (total_income + total_gifts) if (total_income + total_gifts) else 0.0
+    earned_share = (
+        total_income / (total_income + total_gifts)
+        if (total_income + total_gifts)
+        else None
+    )
 
     return {
         "days_covered": span,
@@ -58,7 +62,7 @@ def report(entries: List[Entry], opening_balance: int = 0, low_power: int = 500)
         "burn_per_day": round(burn_per_day, 1),
         "runway_days": round(runway_days, 1) if runway_days != float("inf") else None,
         "low_power": low_power,
-        "earned_share_of_inflow": round(earned_share, 4),
+        "earned_share_of_inflow": round(earned_share, 4) if earned_share is not None else None,
         "spend_by_category": dict(sorted(by_category.items(), key=lambda kv: -kv[1])),
         "spend_entries": len(spend),
         "corrections": sum(1 for e in entries if e.category == "correction"),

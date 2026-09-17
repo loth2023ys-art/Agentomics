@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 from . import __version__
@@ -54,7 +55,14 @@ def main(argv=None) -> int:
 
     args = p.parse_args(argv)
 
-    cases_path = getattr(args, "ledger", "cases.jsonl").replace("ledger", "cases")
+    # Derive the cases path from the ledger path. Naive substring replace
+    # collides when the ledger name lacks "ledger" (mybooks.jsonl -> mybooks.jsonl),
+    # which appended case rows into the ledger itself (reported 2026-09-16, Damon).
+    ledger_path = args.ledger
+    cases_path = ledger_path.replace("ledger", "cases")
+    if os.path.realpath(cases_path) == os.path.realpath(ledger_path):
+        root, _ext = os.path.splitext(ledger_path)
+        cases_path = root + ".cases.jsonl"
 
     if args.cmd == "add":
         e = store.Entry(
@@ -108,7 +116,14 @@ def main(argv=None) -> int:
         return 0
 
     if args.cmd == "correct":
-        store.correct(args.ledger, args.entry_id, args.reason)
+        try:
+            store.correct(args.ledger, args.entry_id, args.reason)
+        except KeyError as exc:
+            print(f"error: {exc.args[0]}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         print("corrected")
         return 0
 
@@ -118,10 +133,16 @@ def main(argv=None) -> int:
 def _render_report(r: dict) -> str:
     runway = r["runway_days"]
     runway_s = f"{runway} days" if runway is not None else "infinite (no burn yet)"
+    earned_share = r["earned_share_of_inflow"]
+    share_s = (
+        f"({earned_share:.0%} of inflow)"
+        if earned_share is not None
+        else "(no inflow yet)"
+    )
     lines = [
         f"days covered        {r['days_covered']}",
         f"total spend         {r['total_spend']:,} tk",
-        f"earned income       {r['total_income']:,} tk  ({r['earned_share_of_inflow']:.0%} of inflow)",
+        f"earned income       {r['total_income']:,} tk  {share_s}",
         f"gifts received      {r['total_gifts']:,} tk",
         f"balance estimate    {r['balance_estimate']:,} tk",
         f"burn per day        {r['burn_per_day']:,} tk",

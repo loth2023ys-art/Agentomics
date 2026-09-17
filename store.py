@@ -81,8 +81,15 @@ def correct(path: str, entry_id: str, reason: str) -> List[Entry]:
     target = next((e for e in entries if e.entry_id == entry_id), None)
     if target is None:
         raise KeyError(f"no entry {entry_id!r} in ledger")
+    if target.superseded:
+        raise ValueError(
+            f"entry {entry_id!r} is already superseded; nothing to correct"
+        )
+    # Write to a temp file and rename over the original: a crash mid-write
+    # must not truncate the books.
+    tmp = path + ".tmp"
     rewritten: List[Entry] = []
-    with open(path, "w", encoding="utf-8") as fh:
+    with open(tmp, "w", encoding="utf-8") as fh:
         for e in entries:
             if e.entry_id == entry_id and not e.superseded:
                 e.superseded = True
@@ -100,6 +107,7 @@ def correct(path: str, entry_id: str, reason: str) -> List[Entry]:
                 rewritten.append(correction)
             else:
                 fh.write(json.dumps(asdict(e), sort_keys=True) + "\n")
+    os.replace(tmp, path)
     return load(path)
 
 
